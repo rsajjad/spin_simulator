@@ -49,3 +49,32 @@ result = rb.run(device, qubit=1,
                 sequence_count=30, shot_count=1024, seed=42)
 plot_rb(result)
 ```
+
+## Web App
+
+A browser-based PWA runs the full simulator client-side using [Pyodide](https://pyodide.org/) (Python compiled to WebAssembly). No server or installation required.
+
+**Live app**: [https://rsajjad.github.io/spin_simulator/](https://rsajjad.github.io/spin_simulator/)
+
+### Install on iPhone / Android
+
+1. Open the link above in Safari (iOS) or Chrome (Android)
+2. Tap **Share → Add to Home Screen** (iOS) or the install banner (Android)
+3. The app launches full-screen like a native app and works offline after first load
+
+### Run locally
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173/spin_simulator/](http://localhost:5173/spin_simulator/) in your browser.
+
+### Features
+
+- Interactive **charge stability diagram** with gate voltage sliders
+- **Rabi**, **Ramsey**, and **randomized benchmarking** experiment panels
+- SVG device schematic with qubit selection
+- All computation runs in a Web Worker (UI stays responsive)

@@ -6,28 +6,28 @@
 import type { SimRequest, SimResult } from "./types";
 
 declare const self: DedicatedWorkerGlobalScope & typeof globalThis;
-declare function importScripts(...urls: string[]): void;
+
+// Collect Python source files at build time via Vite's import.meta.glob
+const pyFiles = import.meta.glob("/src/python/**/*.py", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+}) as Record<string, string>;
 
 // Pyodide globals
 let pyodide: any = null;
+let initPromise: Promise<void> | null = null;
 
 async function initPyodide() {
-  // Load Pyodide from CDN
-  importScripts("https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.js");
-  pyodide = await (self as any).loadPyodide({
+  // Load Pyodide ESM entry from CDN (importScripts not available in module workers)
+  const pyodideUrl = "https://cdn.jsdelivr.net/pyodide/v0.27.5/full/pyodide.mjs";
+  const pyodideMod = await import(/* @vite-ignore */ pyodideUrl);
+  pyodide = await pyodideMod.loadPyodide({
     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.5/full/",
   });
   await pyodide.loadPackage(["numpy", "scipy"]);
 
-  // Load the spin_sim Python source files into Pyodide's filesystem
-  const modules: Record<string, string> = {};
-  const pyFiles = import.meta.glob("/src/python/**/*.py", {
-    eager: true,
-    query: "?raw",
-    import: "default",
-  }) as Record<string, string>;
-
-  // Write files to Pyodide FS
+  // Write the spin_sim Python source files into Pyodide's filesystem
   pyodide.FS.mkdirTree("/home/pyodide/spin_sim/experiments");
   for (const [path, content] of Object.entries(pyFiles)) {
     // path like /src/python/spin_sim/__init__.py
@@ -163,9 +163,12 @@ json.dumps({
 }
 
 self.onmessage = async (event: MessageEvent<SimRequest>) => {
-  if (!pyodide) {
-    await initPyodide();
+  // Ensure Pyodide is initialized exactly once
+  if (!initPromise) {
+    initPromise = initPyodide();
   }
+  await initPromise;
+
   const req = event.data;
   try {
     let result: SimResult;
@@ -182,6 +185,8 @@ self.onmessage = async (event: MessageEvent<SimRequest>) => {
       case "rb":
         result = runRB(req);
         break;
+      default:
+        throw new Error(`Unknown request type: ${(req as any).type}`);
     }
     self.postMessage(result);
   } catch (e: any) {
@@ -191,4 +196,4 @@ self.onmessage = async (event: MessageEvent<SimRequest>) => {
 };
 
 // Start loading Pyodide immediately
-initPyodide();
+initPromise = initPyodide();

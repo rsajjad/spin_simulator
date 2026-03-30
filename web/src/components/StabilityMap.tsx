@@ -32,17 +32,23 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
     const ny = labels.length;
     const nx = labels[0].length;
 
-    canvas.width = nx;
-    canvas.height = ny;
+    // Render at high resolution for crisp text
+    const displaySize = 400;
+    canvas.width = displaySize;
+    canvas.height = displaySize;
 
-    const imageData = ctx.createImageData(nx, ny);
+    // Draw heatmap onto an offscreen canvas at grid resolution
+    const offscreen = document.createElement("canvas");
+    offscreen.width = nx;
+    offscreen.height = ny;
+    const offCtx = offscreen.getContext("2d")!;
+    const imageData = offCtx.createImageData(nx, ny);
 
     for (let iy = 0; iy < ny; iy++) {
       for (let ix = 0; ix < nx; ix++) {
         const label = labels[iy][ix];
         const color = labelColor(label);
 
-        // Parse hex color
         const r = parseInt(color.slice(1, 3), 16) || 0;
         const g = parseInt(color.slice(3, 5), 16) || 0;
         const b = parseInt(color.slice(5, 7), 16) || 0;
@@ -56,10 +62,13 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
         imageData.data[idx + 3] = 255;
       }
     }
-    ctx.putImageData(imageData, 0, 0);
+    offCtx.putImageData(imageData, 0, 0);
 
-    // Draw labels at centroids
-    // First collect centroids for each unique label
+    // Scale heatmap up to display resolution (pixelated look)
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(offscreen, 0, 0, displaySize, displaySize);
+
+    // Draw labels at centroids (in display-resolution coordinates)
     const centroids: Record<number, { sx: number; sy: number; count: number }> = {};
     for (let iy = 0; iy < ny; iy++) {
       for (let ix = 0; ix < nx; ix++) {
@@ -71,18 +80,21 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
       }
     }
 
-    ctx.font = `${Math.max(8, nx / 18)}px monospace`;
+    const scale = displaySize / nx;
+    const fontSize = Math.max(7, displaySize / 54) * 1.3;
+    ctx.imageSmoothingEnabled = true;
+    ctx.font = `${fontSize}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const [labelStr, { sx, sy, count }] of Object.entries(centroids)) {
       if (count < 4) continue;
-      const cx = sx / count;
-      const cy = sy / count;
+      const cx = (sx / count) * scale;
+      const cy = (sy / count) * scale;
       const digits = String(labelStr);
       const text = `(${digits.split("").join(",")})`;
       ctx.fillStyle = "rgba(0,0,0,0.6)";
       const tw = ctx.measureText(text).width;
-      ctx.fillRect(cx - tw / 2 - 2, cy - 6, tw + 4, 12);
+      ctx.fillRect(cx - tw / 2 - 2, cy - fontSize / 2 - 1, tw + 4, fontSize + 2);
       ctx.fillStyle = "#fff";
       ctx.fillText(text, cx, cy);
     }
@@ -95,7 +107,6 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
         style={{
           width: "100%",
           aspectRatio: "1",
-          imageRendering: "pixelated",
           borderRadius: 8,
           border: "1px solid #333",
         }}

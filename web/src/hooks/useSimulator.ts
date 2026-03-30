@@ -24,6 +24,10 @@ export function useSimulator() {
         resolveRef.current = null;
       }
     };
+    worker.onerror = (e) => {
+      console.error("Worker error:", e);
+      setLoading(false);
+    };
     workerRef.current = worker;
     return () => worker.terminate();
   }, []);

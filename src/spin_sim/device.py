@@ -56,15 +56,16 @@ class QuantumDotArray:
         """Create a realistic 1×3 array with 5 gates.
 
         Gate order: P1, B12, P2, B23, P3.
-        Lever arms encode plunger coupling (~0.1 eV/V) with cross-talk
-        from neighbours and a weaker barrier-to-dot coupling.
+        Lever arms encode gate-to-dot coupling (~0.10 eV/V primary),
+        with uniform cross-talk for both plunger and barrier gates.
+        Barriers couple equally to both adjacent dots.
         """
         # rows = dots, cols = gates [P1, B12, P2, B23, P3]
         lever_arms = np.array(
             [
-                [0.10, 0.02, 0.01, 0.00, 0.00],  # dot 1
-                [0.01, 0.02, 0.10, 0.02, 0.01],  # dot 2
-                [0.00, 0.00, 0.01, 0.02, 0.10],  # dot 3
+                [0.10, 0.10, 0.01, 0.00, 0.00],  # dot 1
+                [0.01, 0.10, 0.10, 0.10, 0.01],  # dot 2
+                [0.00, 0.00, 0.01, 0.10, 0.10],  # dot 3
             ]
         )
 

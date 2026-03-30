@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import DeviceSchematic from "./components/DeviceSchematic";
+import EnergyTrace from "./components/EnergyTrace";
 import GateSliders from "./components/GateSliders";
 import StabilityMap from "./components/StabilityMap";
 import ExperimentPanel from "./components/ExperimentPanel";
@@ -137,6 +138,11 @@ export default function App() {
       {/* Device schematic */}
       <div style={{ display: "flex", justifyContent: "center", padding: "4px 0" }}>
         <DeviceSchematic voltages={voltages} selectedGates={selectedGates} />
+      </div>
+
+      {/* 1D energy landscape */}
+      <div style={{ display: "flex", justifyContent: "center", padding: "0 0 4px" }}>
+        <EnergyTrace voltages={voltages} />
       </div>
 
       {/* Gate sliders */}

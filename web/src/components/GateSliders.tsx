@@ -10,9 +10,9 @@ interface Props {
 const GATES = ["P1", "B12", "P2", "B23", "P3"];
 const RANGES: Record<string, [number, number]> = {
   P1: [-0.1, 0.5],
-  B12: [0.0, 0.6],
+  B12: [-0.1, 0.5],
   P2: [-0.1, 0.5],
-  B23: [0.0, 0.6],
+  B23: [-0.1, 0.5],
   P3: [-0.1, 0.5],
 };
 

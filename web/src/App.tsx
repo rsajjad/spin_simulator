@@ -14,7 +14,7 @@ import type {
   RBResult,
 } from "./worker/types";
 
-type Tab = "charge" | "rabi" | "ramsey" | "rb";
+type Tab = "charge" | "experiments";
 
 const INITIAL_VOLTAGES: Record<string, number> = {
   P1: 0.15,
@@ -95,24 +95,19 @@ export default function App() {
     switch (result.type) {
       case "rabi":
         setRabiResult(result);
-        setTab("rabi");
         break;
       case "ramsey":
         setRamseyResult(result);
-        setTab("ramsey");
         break;
       case "rb":
         setRBResult(result);
-        setTab("rb");
         break;
     }
   };
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "charge", label: "Charge" },
-    { key: "rabi", label: "Rabi" },
-    { key: "ramsey", label: "Ramsey" },
-    { key: "rb", label: "RB" },
+    { key: "experiments", label: "Experiments" },
   ];
 
   return (
@@ -196,30 +191,27 @@ export default function App() {
         </div>
       )}
 
-      {tab === "rabi" && (
+      {tab === "experiments" && (
         <div>
-          {rabiResult ? <RabiPlot result={rabiResult} /> : null}
-          <div style={{ marginTop: 12 }}>
-            <ExperimentPanel onRun={handleExperimentRun} loading={loading} />
-          </div>
-        </div>
-      )}
-
-      {tab === "ramsey" && (
-        <div>
-          {ramseyResult ? <RamseyPlot result={ramseyResult} /> : null}
-          <div style={{ marginTop: 12 }}>
-            <ExperimentPanel onRun={handleExperimentRun} loading={loading} />
-          </div>
-        </div>
-      )}
-
-      {tab === "rb" && (
-        <div>
-          {rbResult ? <RBPlot result={rbResult} /> : null}
-          <div style={{ marginTop: 12 }}>
-            <ExperimentPanel onRun={handleExperimentRun} loading={loading} />
-          </div>
+          <ExperimentPanel onRun={handleExperimentRun} loading={loading} />
+          {rabiResult && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, color: "#4ecdc4", marginBottom: 4 }}>Rabi</div>
+              <RabiPlot result={rabiResult} />
+            </div>
+          )}
+          {ramseyResult && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, color: "#4ecdc4", marginBottom: 4 }}>Ramsey</div>
+              <RamseyPlot result={ramseyResult} />
+            </div>
+          )}
+          {rbResult && (
+            <div style={{ marginTop: 16 }}>
+              <div style={{ fontSize: 13, color: "#4ecdc4", marginBottom: 4 }}>Randomized Benchmarking</div>
+              <RBPlot result={rbResult} />
+            </div>
+          )}
         </div>
       )}
 

@@ -32,10 +32,22 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
     const ny = labels.length;
     const nx = labels[0].length;
 
-    // Render at high resolution for crisp text
-    const displaySize = 400;
-    canvas.width = displaySize;
-    canvas.height = displaySize;
+    // Layout: margins for axes, plot area in the center
+    const marginLeft = 44;
+    const marginBottom = 32;
+    const marginTop = 8;
+    const marginRight = 8;
+    const totalW = 400;
+    const totalH = 400;
+    const plotW = totalW - marginLeft - marginRight;
+    const plotH = totalH - marginTop - marginBottom;
+
+    canvas.width = totalW;
+    canvas.height = totalH;
+
+    // Clear
+    ctx.fillStyle = "#1a1a2e";
+    ctx.fillRect(0, 0, totalW, totalH);
 
     // Draw heatmap onto an offscreen canvas at grid resolution
     const offscreen = document.createElement("canvas");
@@ -64,11 +76,11 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
     }
     offCtx.putImageData(imageData, 0, 0);
 
-    // Scale heatmap up to display resolution (pixelated look)
+    // Scale heatmap into the plot area
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(offscreen, 0, 0, displaySize, displaySize);
+    ctx.drawImage(offscreen, marginLeft, marginTop, plotW, plotH);
 
-    // Draw labels at centroids (in display-resolution coordinates)
+    // Draw charge config labels at centroids
     const centroids: Record<number, { sx: number; sy: number; count: number }> = {};
     for (let iy = 0; iy < ny; iy++) {
       for (let ix = 0; ix < nx; ix++) {
@@ -80,17 +92,18 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
       }
     }
 
-    const scale = displaySize / nx;
-    const fontSize = Math.max(7, displaySize / 54) * 1.3;
+    const scaleX = plotW / nx;
+    const scaleY = plotH / ny;
+    const fontSize = Math.max(7, plotW / 54) * 1.3;
     ctx.imageSmoothingEnabled = true;
     ctx.font = `${fontSize}px monospace`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     for (const [labelStr, { sx, sy, count }] of Object.entries(centroids)) {
       if (count < 4) continue;
-      const cx = (sx / count) * scale;
-      const cy = (sy / count) * scale;
-      const digits = String(labelStr);
+      const cx = marginLeft + (sx / count) * scaleX;
+      const cy = marginTop + (sy / count) * scaleY;
+      const digits = String(labelStr).padStart(3, "0");
       const text = `(${digits.split("").join(",")})`;
       ctx.fillStyle = "rgba(0,0,0,0.6)";
       const tw = ctx.measureText(text).width;
@@ -98,7 +111,66 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
       ctx.fillStyle = "#fff";
       ctx.fillText(text, cx, cy);
     }
-  }, [result]);
+
+    // --- Draw axes ---
+    const vxMin = voltagesX[0];
+    const vxMax = voltagesX[voltagesX.length - 1];
+    const vyMin = voltagesY[0];
+    const vyMax = voltagesY[voltagesY.length - 1];
+
+    ctx.strokeStyle = "#666";
+    ctx.lineWidth = 1;
+
+    // X axis ticks and labels
+    const nTicks = 5;
+    ctx.font = "10px system-ui";
+    ctx.fillStyle = "#999";
+    ctx.textBaseline = "top";
+    ctx.textAlign = "center";
+    for (let i = 0; i <= nTicks; i++) {
+      const frac = i / nTicks;
+      const px = marginLeft + frac * plotW;
+      const val = vxMin + frac * (vxMax - vxMin);
+      ctx.beginPath();
+      ctx.moveTo(px, marginTop + plotH);
+      ctx.lineTo(px, marginTop + plotH + 4);
+      ctx.stroke();
+      ctx.fillText(val.toFixed(2), px, marginTop + plotH + 6);
+    }
+
+    // X axis label
+    ctx.font = "11px system-ui";
+    ctx.fillStyle = "#aaa";
+    ctx.fillText(`${gateX} (V)`, marginLeft + plotW / 2, totalH - 4);
+
+    // Y axis ticks and labels
+    ctx.font = "10px system-ui";
+    ctx.fillStyle = "#999";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "right";
+    for (let i = 0; i <= nTicks; i++) {
+      const frac = i / nTicks;
+      const py = marginTop + plotH - frac * plotH;
+      const val = vyMin + frac * (vyMax - vyMin);
+      ctx.beginPath();
+      ctx.moveTo(marginLeft, py);
+      ctx.lineTo(marginLeft - 4, py);
+      ctx.stroke();
+      ctx.fillText(val.toFixed(2), marginLeft - 6, py);
+    }
+
+    // Y axis label (rotated)
+    ctx.save();
+    ctx.translate(10, marginTop + plotH / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = "11px system-ui";
+    ctx.fillStyle = "#aaa";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${gateY} (V)`, 0, 0);
+    ctx.restore();
+
+  }, [result, gateX, gateY]);
 
   return (
     <div style={{ position: "relative", width: "100%", maxWidth: 400 }}>
@@ -126,12 +198,6 @@ export default function StabilityMap({ result, loading, gateX, gateY }: Props) {
           }}
         >
           Computing...
-        </div>
-      )}
-      {result && (
-        <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 2px", fontSize: 11, color: "#888" }}>
-          <span>{gateX} →</span>
-          <span>↑ {gateY}</span>
         </div>
       )}
     </div>

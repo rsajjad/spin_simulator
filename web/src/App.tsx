@@ -18,9 +18,9 @@ type Tab = "charge" | "experiments";
 
 const INITIAL_VOLTAGES: Record<string, number> = {
   P1: 0.15,
-  B12: 0.25,
+  B12: 0.15,
   P2: 0.15,
-  B23: 0.25,
+  B23: 0.15,
   P3: 0.15,
 };
 
